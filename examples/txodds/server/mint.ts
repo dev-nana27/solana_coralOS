@@ -1,11 +1,11 @@
 /**
- * One-time mint for the World Cup demo.
+ * One-time mint for the World Cup demo (optional).
  *
  * Subscribes the kit's buyer wallet to the FREE World Cup tier on devnet, activates an API token, and
- * writes it (+ the WANT) into the repo `.env`:
- *     TXLINE_API_KEY=<token>   BUYER_SERVICE=txline   BUYER_ARG=<a live fixture id>
+ * writes it into the repo `.env` as `TXLINE_API_KEY` — for the standalone `TxLineClient`. The running
+ * demo's proxy subscribes on its own, so you don't need this to `npm run dev`.
  *
- *   cd examples/txodds && npm install && npm run mint        (or: just mint)
+ *   cd examples/txodds && npm install && npm run mint
  *
  * The token is short-lived (devnet free tier), so re-run before a demo. Corrections vs. the published
  * TxODDS examples are baked in: host txline-dev.txodds.com, the real treasury mint, legacy subscribe.
@@ -77,7 +77,7 @@ async function main(): Promise<void> {
   const token: unknown = data.token || data
   if (typeof token !== 'string' || !token) throw new Error('activation returned no token')
 
-  // Pick a current fixture so BUYER_ARG is always live (prefer a World Cup match).
+  // List a few current fixtures with odds, so you can sanity-check the free tier is live.
   const fixtures = (await axios.get(`${BASE}/api/fixtures/snapshot`, {
     headers: { Authorization: `Bearer ${jwt}`, 'X-Api-Token': token },
   })).data as Array<{ FixtureId: number; Competition: string; Participant1: string; Participant2: string }>
@@ -97,17 +97,13 @@ async function main(): Promise<void> {
     } catch { /* skip fixtures without odds */ }
   }
   if (pick.length === 0) throw new Error('no fixtures with odds — the free tier may be inactive')
-  const ids = pick.map((f) => f.FixtureId).join(',')
 
   let env = fs.readFileSync(ENV_PATH, 'utf8')
   env = setKv(env, 'TXLINE_API_KEY', token)
-  env = setKv(env, 'BUYER_SERVICE', 'txline')
-  env = setKv(env, 'BUYER_ARG', String(pick[0].FixtureId))
-  env = setKv(env, 'BUYER_ARGS', ids)
   fs.writeFileSync(ENV_PATH, env)
 
-  console.error('[mint] ✓ TXLINE_API_KEY + BUYER_SERVICE=txline written to .env')
-  console.error(`[mint]   the market will rotate through ${pick.length} fixtures:`)
+  console.error('[mint] ✓ TXLINE_API_KEY written to .env')
+  console.error(`[mint]   ${pick.length} fixtures currently carry 1X2 odds:`)
   for (const f of pick) console.error(`[mint]     ${f.FixtureId}  ${f.Participant1} v ${f.Participant2}`)
   console.error('[mint]   next: `npm run dev`  (proxy + Oracle UI), or `npm run web` to open the board')
 }

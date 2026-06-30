@@ -6,28 +6,23 @@ Contributions are welcome. The `main` branch is the integration branch — targe
 
 | Directory | Language | Typical changes |
 |-----------|----------|-----------------|
-| `packages/agent-runtime/` | TypeScript | The three-pillar runtime: CoralOS client, Solana Pay, the LLM shim, the market protocol |
-| `coral-agents/` | TypeScript | The buyer/seller agents + seller personas; fork `seller-agent/src/service.ts` |
-| `examples/marketplace/` | TypeScript | The market launcher (`start.ts`) + the React dashboard (`web/`) + feed server |
-| `examples/agent-economy/escrow/` | Rust (Anchor) | The escrow settlement contract |
+| `packages/agent-runtime/` | TypeScript | The runtime: LLM shim, Solana Pay + devnet guard, CoralOS MCP client, the market protocol |
+| `examples/txodds/` | TypeScript | The World Cup Oracle — the edge transform, the proxy, the web app |
+| `examples/txodds/escrow/` | Rust (Anchor) | The escrow settlement contract |
 
 ## Prerequisites
 
 - Node.js 20+
-- Docker Desktop (coral-server launches the agents)
+- An LLM key + a funded devnet wallet to run the live demo (see the root README). **No Docker needed.**
 
 ## Development Commands
 
 ```sh
-# build the runtime first — coral-agents/examples depend on its dist via file: deps
+# build the runtime first — examples/txodds depends on its dist via a file: dep
 cd packages/agent-runtime && npm install && npm run build && npm run typecheck && npm test
 
-# typecheck + test the agents
-cd coral-agents/seller-agent && npm install && npm run typecheck && npm test
-cd coral-agents/buyer-agent && npm install && npm run typecheck && npm test
-
-# the dashboard (runs offline against fixtures — no devnet)
-cd examples/marketplace/web && npm install && npm test && npm run e2e
+# typecheck + test the example
+cd examples/txodds && npm install && npm run typecheck && npm test
 ```
 
 ## PR Workflow

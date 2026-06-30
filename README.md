@@ -33,8 +33,12 @@ Everything runs on **devnet** — free play money, real on-chain settlement. Key
 | **An LLM key** | the agent's value call | `ANTHROPIC_API_KEY` (default) — or `LLM_PROVIDER=openai` + `OPENAI_API_KEY` |
 | **A funded devnet wallet** | the buyer signs the escrow deposit→release | generated in step 1; fund at [faucet.solana.com](https://faucet.solana.com) |
 
-> The demo still renders without a key or funding — it shows clearly-labelled demo data and skips the
+> The demo still renders without a key or funding — it shows clearly-labelled sample data and skips the
 > on-chain settle. A funded wallet + LLM key turn on **live odds** and **real settlement**.
+
+> **Do I need Docker?** No. The demo is two Node processes (a data/escrow proxy + a static web server),
+> and the escrow contract is already deployed to devnet (its client fetches the IDL on-chain). Docker
+> and the Anchor toolchain are only needed if you want to *rebuild/redeploy the escrow contract itself*.
 
 ## Quick start
 

@@ -1,139 +1,86 @@
 # Troubleshooting
 
-**First step, always:** run the readiness check — it diagnoses most of this and prints the fix.
-
-```sh
-just doctor          # or:  node scripts/doctor.js
-```
+The demo is just two Node processes (a proxy + a static web server) — **no Docker, no coral-server**.
+Most issues are a missing LLM key, an unfunded wallet, or the free TxODDS tier being quiet.
 
 ---
 
 ## Setup & toolchain
 
-### `node: command not found` (Windows, via `just`)
-The justfile uses `cmd.exe` (`set windows-shell := ["cmd.exe", "/c"]`), which has the full PATH. If
-you still hit it, reopen your terminal after installing Node, or run the manual README commands.
+### `Cannot find module '@solana/web3.js'` running `scripts/setup.js`
+The `scripts/` deps aren't installed: `npm install --prefix scripts`, then retry.
 
-### `just` isn't installed
-It's optional (`winget install Casey.Just`). Every recipe in the `justfile` is a one-liner you can copy.
-
-### `Cannot find module '@solana/web3.js'` running setup/doctor
-The `scripts/` deps aren't installed: `cd scripts && npm install`, then retry.
+### `npm run dev` says "Node 20+ required"
+The kit targets Node 20+. Install it from [nodejs.org](https://nodejs.org), reopen your terminal, retry.
 
 ---
 
-## Funding (the #1 hour-1 blocker)
+## Funding (the #1 blocker)
 
 ### "Where are my wallet addresses?"
 After `node scripts/setup.js` they're printed **and saved to `WALLETS.txt`**. Re-run it anytime to reprint.
 
 ### The faucet won't give me SOL / "rate limited"
 [faucet.solana.com](https://faucet.solana.com) is the **only** way (CLI/RPC `airdrop` is gated). It
-needs **GitHub sign-in** and rate-limits per account.
-- Make sure you're signed in with GitHub.
-- Request a small amount (1 SOL is plenty — a deposit is ~0.0002).
-- Fund **both** the buyer and seller wallets; devnet SOL persists, so you only fund once.
-
-### Agents start but the buyer never deposits / "insufficient funds"
-The buyer wallet is empty. `just doctor` checks both balances — fund the one it flags (`WALLETS.txt`).
+needs **GitHub sign-in** and rate-limits per account. Request a small amount — a deposit is ~0.0002 SOL,
+so 1 SOL lasts a long time. Fund the **buyer** wallet (it signs the escrow); devnet SOL persists.
 
 ---
 
-## Docker & the stack
+## The board shows "sample fixtures" instead of live odds
 
-### `Cannot connect to the Docker daemon` / coral exits immediately
-Docker Desktop isn't running. Start it, wait, then `docker compose up -d coral`.
+The board renders only fixtures that currently have **verified live odds**. The free World Cup tier's
+odds are intermittent, so:
 
-### coral is up but no agents appear
-coral launches the agents as containers — they must be **built first**:
-```sh
-bash build-agents.sh        # or: just build
-```
-No bash or `just` (e.g. Windows without Git Bash)? `npm run dev` builds the images for you, or run the
-two `docker build` commands from the README "by hand" path directly.
-Check: `docker images | grep agent`. coral needs the Docker socket (mounted in `docker-compose.yml`).
+- **On a fresh start** the proxy needs a few seconds to subscribe on devnet. The page keeps polling and
+  switches to live on its own — give it ~10–20s.
+- **If it stays on sample data**, the tier genuinely has no priced markets right now. The board goes
+  live automatically when odds return; you don't need to restart anything.
+- **Check directly:** `curl http://localhost:8801/api/board` — a non-empty array means live data is
+  flowing. `[]` means no priced markets at the moment.
 
-### Native Linux Docker (not Docker Desktop): agents can't reach coral
-`examples/agent-economy/config/coral.toml` sets `[docker] address = "host.docker.internal"`, which
-**Docker Desktop** (Windows/macOS — the documented prereq) resolves automatically but **native Linux
-Docker** does not, so coral-spawned agent containers can't dial back to coral. Either:
-- set `[docker] address` in `coral.toml` to the Docker bridge gateway (usually `172.17.0.1`), or
-- ensure spawned containers map `host.docker.internal:host-gateway` (Docker Engine 20.10+).
-
-On Docker Desktop none of this applies.
-
-### First round is slow
-On the first session coral pulls/launches the agent containers — give it **~20 seconds**. Watch with
-`docker compose logs -f coral`.
-
-### Port `:5555` already in use
-```sh
-docker compose down
-#   Windows:  netstat -ano | findstr :5555      macOS/Linux:  lsof -i :5555
-```
+### The proxy log shows a subscribe/auth error
+The proxy needs a funded `BUYER_KEYPAIR_B58` in the repo `.env` and the TxLINE dev host
+(`txline-dev.txodds.com`) reachable. Fund the buyer wallet, then restart `npm run dev`. The page still
+renders clearly-labelled sample data while the proxy is unavailable.
 
 ---
 
-## Agents, LLM & the market
+## The agent's call says "deterministic" instead of "LLM"
 
-### Sellers never bid
-They need an LLM key — `ANTHROPIC_API_KEY` (or `LLM_PROVIDER=openai` + `OPENAI_API_KEY`) in `.env`,
-forwarded to the agents. Without it `decideBid` falls back to a floor bid only if the hard guards pass;
-check the key is set and the seller's `SERVICES` inventory includes `BUYER_SERVICE`.
+The LLM call failed and fell back to the deterministic pick. Almost always the API key:
 
-### `NO_SELLERS` every round
-No seller carries `BUYER_SERVICE` in its inventory, or none came online. Default `BUYER_SERVICE=coingecko`
-is carried by `seller-cheap` + `seller-premium`. Give the session ~20s on first run.
+- No key, or the wrong one, in `.env` (`ANTHROPIC_API_KEY`, or `LLM_PROVIDER=openai` + `OPENAI_API_KEY`).
+- **Out of credits** — Anthropic returns `400 … credit balance is too low`. Top up, or switch providers.
 
-### `DELIVERED` / `RELEASED` never comes back
-Trace it: `docker compose logs -f coral`, or set `TRACE=1`. Common causes in order: wallets unfunded →
-agent images not built → LLM key missing → escrow program unreachable (RPC) → the seller's upstream API down.
+Restart `npm run dev` after changing `.env` (the proxy reads it at startup).
 
 ---
 
-## World Cup demo (TxLINE)
+## Settlement (`Settle`) is unavailable
 
-### `npm run dev` opens the *generic* market, not the World Cup
-The TxLINE mint step is fault-tolerant: if it fails, the demo clears the stale txline keys from `.env`
-and falls back to the generic market. The mint needs a **funded buyer wallet** and the TxLINE dev host
-(`txline-dev.txodds.com`) reachable. Fund the buyer, then re-run `npm run dev` (or `just mint`).
-
-### World Cup rounds error on delivery / `TXLINE_API_KEY not set`
-The TxLINE free-tier token is **short-lived** — re-mint before a demo with `just mint` (or `npm run dev`).
-If the host is unreachable, only the generic services (coingecko / jupiter / news / inference) will
-deliver; the World Cup specialist sits out.
-
----
-
-## Escrow contract
+The escrow round needs a funded buyer wallet and the deployed devnet program.
 
 ### `escrow IDL not found on-chain`
-The agents fetch the IDL from the deployed program. The default `PROGRAM_ID`
-(`R5NW…CeXet`) is on **devnet** — make sure `SOLANA_RPC_URL` points at devnet. If you redeployed your
-own program, run `anchor keys sync` and update the id in the agents' `escrow.ts`.
-Still failing on devnet with the default id? The shared demo deployment may have been removed — deploy
-your own and repoint:
-```sh
-cd examples/agent-economy/escrow && anchor build && anchor deploy --provider.cluster devnet
-anchor keys sync     # then update PROGRAM_ID in coral-agents/*/src/escrow.ts
-```
+The client fetches the IDL from the deployed program. The default `PROGRAM_ID`
+(`R5NW…CeXet`) is on **devnet** — make sure `SOLANA_RPC_URL` points at devnet. If the shared demo
+deployment was removed, deploy your own from `examples/txodds/escrow` and update `PROGRAM_ID` in
+`examples/txodds/agent/escrow.ts`.
 
 ### `anchor build` fails (only if you fork the contract)
-Needs the Solana + Anchor toolchain (Anchor **0.32.x**). On Windows, if `target/deploy/escrow.so` is
-missing after a build, run `cd programs/escrow && cargo build-sbf`. The contract is opt-in; the demo
-runs against the already-deployed program with no build.
+Needs the Solana + Anchor toolchain (Anchor **0.32.x**). The contract is **opt-in** — the demo runs
+against the already-deployed program with no build. See `examples/txodds/escrow/README.md`.
 
 ---
 
-## Cleanup — orphaned agent containers
-
-coral launches a fresh agent container per session and doesn't reap them, so they pile up:
+## Ports already in use (`:3020` / `:8801`)
+Something is already bound. Find and stop it:
 ```sh
-just clean          # or: node scripts/clean.js   (only removes containers from the agent images)
+#   Windows:  netstat -ano | findstr :3020      macOS/Linux:  lsof -i :3020
 ```
-A full reset: `docker compose down && just clean && docker compose up -d coral`.
 
 ---
 
 ## Still stuck?
-Run `just doctor` and paste its output into an issue — it captures Node, Docker, wallet, and stack state.
+Open an issue with: your Node version, whether the buyer wallet is funded, and the proxy log output
+(`npm run dev` prints it).

@@ -152,5 +152,5 @@ Every box draws from the **same three TxLINE snapshots**. The LLM edge and the e
 4. **#2 line movement** — the "it's alive" moment.
 5. **#3 live scores** — data-permitting (often pre-match on the free tier).
 
-See also: [`README.md`](README.md) (one-time subscribe + run) and the seller's `txline` service in
-[`coral-agents/seller-agent/src/service.ts`](../../coral-agents/seller-agent/src/service.ts).
+See also: [`README.md`](README.md) (one-time subscribe + run) and the standalone `txline` service
+reference in [`agent/service.ts`](agent/service.ts).

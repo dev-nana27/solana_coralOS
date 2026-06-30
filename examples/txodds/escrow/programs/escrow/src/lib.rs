@@ -13,8 +13,8 @@
 //! - `close = buyer` — secure closure returns rent and prevents account revival.
 //! - Checked math on every lamport move.
 //!
-//! You don't fork this — you **call** it. The student fork point is the service being sold
-//! (`coral-agents/seller-agent/src/service.ts`); agents deposit / release / refund through this
+//! You don't fork this — you **call** it. The fork point is the service being sold
+//! (`examples/txodds/agent/service.ts`); the agent deposits / releases / refunds through this
 //! program via its TS client. See ../README.md.
 
 use anchor_lang::prelude::*;

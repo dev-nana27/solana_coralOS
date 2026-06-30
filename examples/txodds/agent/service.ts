@@ -12,17 +12,17 @@
  *   "edge <fixtureId>"  -> odds + an LLM value call                                  (all three pillars)
  *
  * Pillars in play:
- *   - CoralOS  carries this string in/out (it's the DELIVERED payload) — handled by the runtime.
- *   - Solana   gates delivery: the seller only calls this after the escrow PDA is funded.
- *   - LLM      turns raw odds into a sellable insight in the `edge` verb (`complete()` from the kit).
+ *   - Data     verified TxLINE fixtures/odds, fetched on devnet (TxLineClient).
+ *   - LLM      turns raw odds into a sellable insight in the `edge` verb (`analyzeEdge` → `complete()`).
+ *   - Solana   the buyer escrow settles delivery on-chain (see ../server/proxy.ts `/api/settle`).
  */
 import { TxLineClient } from './txline.js'
 import { analyzeEdge } from './edge.js'
 
 export async function deliverTxOdds(request: string): Promise<string> {
   const tokens = request.trim().split(/\s+/).filter(Boolean)
-  // A bare fixture id (single numeric token) is treated as `edge <id>` — the on-thesis product, and it
-  // survives the single-token WANT `arg` the marketplace broadcasts (e.g. BUYER_ARG=17588245).
+  // A bare fixture id (single numeric token) is treated as `edge <id>` — the on-thesis product (so a
+  // caller can pass just a fixture id, e.g. "17588245").
   let verb = (tokens[0] ?? 'fixtures').toLowerCase()
   let rest = tokens.slice(1)
   if (/^\d+$/.test(verb)) { rest = [verb]; verb = 'edge' }

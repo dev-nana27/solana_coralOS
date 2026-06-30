@@ -1,3 +1,3 @@
 # packages
 
-- **[agent-runtime/](agent-runtime/README.md)** — the three-pillar runtime every agent imports: the CoralOS MCP client, Solana Pay helpers, the LLM provider shim, and the market protocol.
+- **[agent-runtime/](agent-runtime/README.md)** — the runtime the agent imports: the LLM provider shim, Solana Pay + devnet guard, a CoralOS MCP client, and the market protocol.

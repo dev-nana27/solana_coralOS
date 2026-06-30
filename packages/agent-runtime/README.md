@@ -1,24 +1,26 @@
 # @pay/agent-runtime
 
-The three pillars every agent in this kit stands on — so you write only *behavior*.
+The runtime an agent stands on — so you write only *behavior*. The World Cup Oracle
+(`examples/txodds`) uses the **LLM** + **Solana** modules; the **CoralOS** + **Market** modules are the
+rails for growing it into a multi-agent market.
 
 ```ts
-import { startCoralAgent, generatePaymentUrl, complete, parseBid } from '@pay/agent-runtime'
+import { complete, solanaConnection, generatePaymentUrl } from '@pay/agent-runtime'
 ```
 
-The `coral-agents/` agents depend on it via a local `file:` link. Build its `dist` before dependents:
+`examples/txodds` depends on it via a local `file:` link. Build its `dist` before dependents:
 `npm install && npm run build` (also `npm run typecheck`, `npm test`).
 
-## The pillars
+## The modules
 
-Each pillar is a folder under `src/` with its own barrel; the root `src/index.ts` re-exports them all.
+Each is a folder under `src/` with its own barrel; the root `src/index.ts` re-exports them all.
 
-| Pillar | Exports | Module |
+| Module | Exports | Folder |
 |--------|---------|--------|
-| **CoralOS** | `startCoralAgent(config, run)`, `CoralMcpAgent`, and the `ctx` verbs (`waitForMention`, `waitForMentionInThread`, `waitForAgent`, `reply`, `send`, `createThread`) | `coral/` (`mcp.ts`, `server.ts`) |
-| **Solana** | `solanaConnection`/`assertDevnet` (devnet guard), `generatePaymentUrl`/`verifyPayment`/`signTransfer`/`loadKeypairB58` (reference-bound) | `solana/` (`connection.ts`, `pay.ts`) |
 | **LLM** | `complete()` — SDK-free provider shim (Anthropic default; `LLM_PROVIDER=openai` flips it) + `parseJsonReply` | `llm/` (`complete.ts`) |
-| **Market** | `formatWant`/`parseBid`/`parseAward`/… + `selectBids`/`pickCheapest` — the marketplace wire protocol (pure) | `market/` (`protocol.ts`) |
+| **Solana** | `solanaConnection`/`assertDevnet` (devnet guard), `generatePaymentUrl`/`verifyPayment`/`signTransfer`/`loadKeypairB58` (reference-bound) | `solana/` (`connection.ts`, `pay.ts`) |
+| **CoralOS** | `startCoralAgent(config, run)`, `CoralMcpAgent`, and the `ctx` verbs (`waitForMention`, `waitForAgent`, `reply`, `send`, `createThread`) | `coral/` (`mcp.ts`, `server.ts`) |
+| **Market** | `formatWant`/`parseBid`/`parseAward`/… + `selectBids`/`pickCheapest` — the WANT/BID/AWARD wire protocol (pure) | `market/` (`protocol.ts`) |
 
 The runtime is coordination + helpers — it never holds a keypair. Settlement is the escrow contract,
 called agent-side.
@@ -43,8 +45,8 @@ agent comes online before you send it work.
 
 | Want… | Do this |
 |---|---|
-| new data to sell | edit `deliverService` in `coral-agents/seller-agent` |
-| a new seller persona | a `coral-agent.toml` with `PERSONA`/`FLOOR_SOL`/`SERVICES` over the seller image |
-| a new agent role | `startCoralAgent({ agentName }, run)` + the market/escrow helpers |
+| new data to sell | edit the edge transform / `deliverService` in `examples/txodds/agent` |
+| a different LLM | set `LLM_PROVIDER`/`LLM_MODEL` (no code change), or call `complete()` directly |
+| a multi-agent market | `startCoralAgent({ agentName }, run)` + the `market/` protocol + the escrow client |
 
-For exact signatures, read the small, commented modules in `src/` — each is one pillar.
+For exact signatures, read the small, commented modules in `src/` — each is one concern.

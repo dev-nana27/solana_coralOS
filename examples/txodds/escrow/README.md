@@ -1,10 +1,8 @@
 # Escrow — the settlement spine
 
-> **This is the settlement spine of the marketplace — not optional.** Every awarded order settles
-> through this program: the buyer deposits, the seller delivers, the buyer releases (or refunds after a
-> deadline). It is the **only Rust in the kit**; everything else is TypeScript. A legacy 1:1 *pay-first*
-> path (plain SOL transfer + Solana Pay verification) is still kept as an on-ramp, but the open market
-> of competing strangers runs on escrow.
+> **This is the settlement spine — not optional.** Every order settles through this program: the buyer
+> deposits, the agent delivers, the buyer releases (or refunds after a deadline). It is the **only Rust
+> in the kit**; everything else is TypeScript.
 >
 > **Status:** ✅ built, **deployed to devnet**, and tested. Program ID
 > [`R5NWNg9eRLWWQU81Xbzz5Du1k7jTDeeT92Ty6qCeXet`](https://explorer.solana.com/address/R5NWNg9eRLWWQU81Xbzz5Du1k7jTDeeT92Ty6qCeXet?cluster=devnet).
@@ -15,12 +13,9 @@
 
 ## Why escrow
 
-The kit also keeps a legacy **pay-first** path: the buyer pays, *then* trusts the seller to deliver. If
-the seller takes the payment and delivers nothing, the buyer is out the money (the security review calls
-this the "trust asymmetry"). That's fine for first-party / trusted agents; it does **not** scale to an
-open marketplace of strangers — which is why the market settles through escrow instead.
-
-Escrow flips it to **conditional settlement**:
+A naive **pay-first** flow has the buyer pay, *then* trust the seller to deliver — if the seller takes
+the money and delivers nothing, the buyer is out the funds. Escrow flips that to **conditional
+settlement**:
 
 ```
 buyer deposits SOL into a per-order escrow PDA      (funds locked on-chain)
@@ -75,7 +70,7 @@ Prereqs: Rust, the Solana CLI, and Anchor 0.32.x (`avm install 0.32.1 && avm use
 [`solana-dev`](../../../SKILLS.md) skill can set this up and help debug.
 
 ```sh
-cd examples/agent-economy/escrow
+cd examples/txodds/escrow
 anchor build                              # compiles the program + generates the IDL & TS types
 anchor keys sync                          # set the program id to your keypair's
 anchor deploy --provider.cluster devnet   # deploy (needs a funded devnet wallet)

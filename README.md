@@ -34,6 +34,11 @@ Some things agents can sell on these exact rails:
 | **Oracle agent**     | a verified fact / a checked output                        | trust in a number        |
 | **Reseller agent**   | packages other agents' services into one                  | a bundle, one payment    |
 
+The first two already ship as working markets: [`examples/freelancer`](examples/freelancer/README.md)
+(heterogeneous harnesses — a plain LLM vs headless **Claude Code** — bid on a brief, an independent
+verifier gates the release) and [`examples/research`](examples/research/README.md) (live odds moves
+trigger the WANT — quiet board, no spend). Fork those instead of starting blank.
+
 > **The World Cup oracle is only the default demo — not the product.** It sells a verified, de-margined
 > betting line to prove the rails work end-to-end. The invitation isn't "here's a repo about sports
 > odds"; it's **"here are the rails for autonomous services with on-chain settlement — fork one function,
@@ -44,13 +49,20 @@ Some things agents can sell on these exact rails:
 The competitive market runs one round as a chain of on-chain-anchored steps. All of it ships working:
 
 ```
-WANT ─▶ BID ─▶ AWARD ─▶ DEPOSITED ─▶ DELIVERED ─▶ RELEASED
- │       │       │          │            │            │
- buyer   sellers buyer     funds lock   seller       escrow pays
- asks    compete picks    in escrow    delivers     the winner
-                 best      (devnet)     the service  (or REFUNDED
-                 value                               on a no-show)
+WANT ─▶ BID ─▶ AWARD ─▶ DEPOSITED ─▶ DELIVERED ─▶ (VERIFIED) ─▶ RELEASED
+ │       │       │          │            │            │             │
+ buyer   sellers buyer     funds lock   seller       independent   escrow pays
+ asks    compete picks    in escrow    delivers     verifier      the winner
+                 best      (devnet)     the service  gates the     (or REFUNDED
+                 value                  (hash-bound) release       on a no-show)
 ```
+
+**Validated live on devnet, both ways.** A seller that delivered a broken payload got its release
+**refused** (verifier fail → policy gate → funds stayed refundable), and a good delivery settled
+through the neutral arbiter —
+[see the release tx](https://explorer.solana.com/tx/3MEWxbYUPVGV4QXN3VH4J7Rripz4vbrFKCbBNAbXtYAhXG3NecAkFZkQmYmqBuykJZkHhkiMruXkbnYDCN1BpbM8?cluster=devnet).
+Every round leaves a **run ledger** folder (bids, award reasoning, hash-bound delivery, verifier
+verdict, Explorer-linked txs) and feeds a **reputation score** buyers weigh on the next award.
 
 | You get, prebuilt                                      | Where                                                                     | So you don't have to                       |
 | ------------------------------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------ |
@@ -60,6 +72,10 @@ WANT ─▶ BID ─▶ AWARD ─▶ DEPOSITED ─▶ DELIVERED ─▶ RELEASED
 | **Frontend state** (live rounds/bids/settlement) | [`examples/marketplace/web`](examples/marketplace/web)                   | build a React app that streams the market  |
 | **Solana Pay** (reference-bound transfers)       | [`packages/agent-runtime/src/solana`](packages/agent-runtime/src/solana) | hand-roll payment URLs + verification      |
 | **Escrow** (deposit → release / refund)         | [`examples/txodds/escrow`](examples/txodds/escrow)                       | write, audit, and deploy an Anchor program |
+| **Harness adapters** (Claude Code / any CLI sells) | [`packages/harness-runtime`](packages/harness-runtime)                 | bridge external agent harnesses yourself   |
+| **Verifier gate** (release only on a pass)       | [`coral-agents/verifier-agent`](coral-agents/verifier-agent)             | build independent delivery checks          |
+| **Policy choke point** (caps, bindings, gates)   | [`packages/agent-runtime/src/policy`](packages/agent-runtime/src/policy) | scatter ad-hoc safety checks               |
+| **Run ledger + reputation** (auditable rounds)   | [`packages/agent-runtime/src/ledger`](packages/agent-runtime/src/ledger) | build an audit trail + track record        |
 
 ## Prerequisites
 
@@ -134,6 +150,9 @@ One `npm run` per example, from the repo root. **Each command installs that exam
 | `npm run demo:coral` | the same oracle as a **multi-agent CoralOS round** (buyer + competing sellers) | Docker + `docker compose up -d coral` + a TxLINE token (`npm --prefix examples/txodds run mint`) |
 | `npm run marketplace` | **the full market** — a buyer + LLM sellers bidding in one session | Docker + `docker compose up -d coral` + `bash build-agents.sh` |
 | `npm run marketplace:web` | the market **visualizer** — live rounds, bids, settlement badges (:5173) | the marketplace feed running |
+| `npm run freelancer` | **the freelancer market** — heterogeneous harnesses bid on a brief; an independent verifier gates the escrow release | Docker + coral + `bash build-agents.sh` (add `CLAUDE_SELLER=1` after `bash build-agents.sh claude`) |
+| `npm run research` | **the research market** — live odds moves trigger paid research rounds (quiet board = no spend) | Docker + coral + the txodds proxy + `npm run research:watch` |
+| `npm run research:watch` | the research **event watcher** — diffs the live board, queues WANTs (:4600) | the txodds proxy (`npm run dev` or `npm --prefix examples/txodds run proxy`) |
 | `npm run agent-economy` | **autonomous** agent→agent purchase | Docker + `docker compose up -d coral` |
 | `npm run agent-economy:bridge` | the **human checkout** bridge (HTTP + React) | Docker + `docker compose up -d coral` |
 | `npm run agent-economy:quickstart` | the **bare 402** pay-per-call seller (no Docker, no CoralOS) | LLM key + funded wallet |
@@ -159,7 +178,7 @@ build?"** — the rails don't care what you sell.
 
 ## Under the hood — the runtime
 
-Agents import [`packages/agent-runtime`](packages/agent-runtime) and write only behaviour. Four modules,
+Agents import [`packages/agent-runtime`](packages/agent-runtime) and write only behaviour. Six modules,
 one per concern:
 
 - **`llm/`** — [`complete()`](packages/agent-runtime/src/llm/complete.ts), one provider-agnostic call
@@ -170,9 +189,23 @@ one per concern:
   the **devnet guard** that throws on a mainnet RPC unless `ALLOW_MAINNET=1`, so it applies everywhere
   value moves.
 - **`coral/`** — a CoralOS (MCP) client + agent entrypoint: the coordination fabric the sellers and
-  buyer meet on. Deep dive, source → example: **[CORAL.md](CORAL.md)**; official docs:
+  buyer meet on. Deep dive, source → example: **[CORAL.md](CORAL.md)** (implementation walkthrough:
+  [CORAL-IMPLEMENTATION.md](CORAL-IMPLEMENTATION.md)); official docs:
   [docs.coralos.ai](https://docs.coralos.ai/welcome).
-- **`market/`** — the WANT/BID/AWARD wire format: the negotiation protocol, pure and testable.
+- **`market/`** — the WANT/BID/AWARD wire format (now incl. **VERIFY/VERIFIED**): the negotiation
+  protocol, pure and testable.
+- **`ledger/`** — the **run ledger**: one folder per paid round (bids, award reasoning, sha256-bound
+  delivery, verifier verdict, Explorer-linked txs, the raw transcript) + **reputation** derived from it.
+  "What did the agent actually do for the money?" — open the run.
+- **`policy/`** — [`enforce()`](packages/agent-runtime/src/policy/policy.ts), the choke point every
+  deposit/release passes: spend caps, service allowlist, payout binding, award-price binding
+  (a seller can't inflate the escrow after winning), verifier gate.
+
+And one more package: [`packages/harness-runtime`](packages/harness-runtime) — the **harness adapter
+SDK**. One interface (`quote`/`run`) so a seller can be a prompt (`node-llm`), **headless Claude Code**
+(`claude-code`, with Coral MCP config injection), or any CLI (`HARNESS=cli HARNESS_CMD='hermes {prompt}'`).
+The agent keeps the wallet and the escrow checks; the harness only produces hash-bound artifacts —
+**harness processes never hold keys**.
 
 ### The escrow contract — the settlement spine
 
@@ -199,10 +232,13 @@ deployed ids with no local build. **Devnet only** — never put a funded mainnet
 | Directory                   | Purpose                                                                                                                                                                                                                                                               |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `examples/txodds/`        | **the default demo** — the World Cup oracle. `agent/` (`service.ts` = the `deliverService()` fork point; `edge.ts` = its transform; escrow/arbiter clients), `server/` (proxy + mint), `web/` (React board), `escrow/` (the two Anchor programs) |
-| `examples/marketplace/`   | **the full market** — a buyer + competing sellers in one CoralOS session; `feed/` (SSE feed → rounds), `web/` (React visualizer). Needs Docker                                                                                                            |
+| `examples/marketplace/`   | **the full market** — a buyer + competing sellers in one CoralOS session; `feed/` (rounds + the **run ledger** `runs/`, `/api/runs`, `/api/reputation`, disk replay), `web/` (React visualizer). Needs Docker                                              |
+| `examples/freelancer/`    | **the freelancer market** — heterogeneous harnesses (plain LLM vs **Claude Code**) bid on a brief; the **verifier** gates the arbiter release. Needs Docker                                                                                              |
+| `examples/research/`      | **the research market** — live odds moves trigger paid research WANTs (event watcher + event-mode buyer; quiet board = no spend). Needs Docker + the txodds proxy                                                                                          |
 | `examples/agent-economy/` | **three front doors** on CoralOS — autonomous (agent→agent), a human checkout bridge, and a bare 402 pay-per-call quickstart                                                                                                                                  |
-| `coral-agents/`           | the agents coral-server launches per session —`buyer-agent`, `seller-agent` (+ personas), `broker` (swarm reseller), `echo-agent`, `user_proxy`                                                                                                            |
-| `packages/agent-runtime/` | the runtime —`llm/`, `solana/`, `coral/`, `market/`                                                                                                                                                                                                          |
+| `coral-agents/`           | the agents coral-server launches per session —`buyer-agent`, `seller-agent` (+ personas incl. `seller-claude`), `verifier-agent` (the release gate), `broker` (swarm reseller), `echo-agent`, `user_proxy`                                                 |
+| `packages/agent-runtime/` | the runtime —`llm/`, `solana/`, `coral/`, `market/`, `ledger/`, `policy/`                                                                                                                                                                                    |
+| `packages/harness-runtime/` | the **harness adapter SDK** — `node-llm` / `claude-code` / any CLI as market sellers                                                                                                                                                                       |
 | `scripts/`                | `txodds.js` (`npm run dev`), `setup.js` (devnet wallets)                                                                                                                                                                                                        |
 | `docker-compose.yml`      | coral-server (the MCP coordinator) for the market                                                                                                                                                                                                                     |
 

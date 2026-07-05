@@ -293,6 +293,110 @@ Sellers stop being stateless; the ledger becomes a track record.
 **Done when:** a seller's bid quality visibly changes based on its own history, and the
 buyer's award reasoning cites reputation.
 
+---
+
+## Phases 7–9 — complete the frontends, make Coral visible (planned 2026-07-05)
+
+The audit that motivates this: **the feed already serves the whole agent-commerce layer —
+`verification`, `/api/runs`, `/api/reputation`, ledger replay (`source:"ledger"`) — and the
+frontends render none of it** (zero references in `examples/marketplace/web/src`). Worse, nothing
+in any UI shows that the coordination *is* Coral: threads, `@mentions`, agent presence, and the
+puppet trick are all invisible — a judge can't tell the market apart from a REST API. And the
+feed's `collectMessages` flattens the extended state to `{sender, text}`, **dropping thread ids and
+mentions**, so no UI could show the bus even if it tried. Fix the data first, then the three UIs.
+
+### Phase 7.0 — enabler: the feed exposes Coral-native structure
+
+*The one data change everything else hangs off.*
+
+**Build**
+- `examples/marketplace/feed/src/coralState.ts`: stop dropping structure — extract
+  `{ threadId, threadName, sender, text, mentions[], timestamp }` per message (keep the
+  defensive key-name fallbacks). `foldRounds` keeps working on `{sender, text}` unchanged.
+- New endpoints on the feed:
+  - `GET /api/threads?session=` → threads with participants + full message envelopes (the bus view)
+  - `GET /api/session?session=` → session id, namespace, agents present (from extended state)
+  - `GET /api/events` → proxy of the research watcher's `/queue` (`WATCHER_BASE`, default :4600) so
+    the browser never needs a second origin
+- Persist the richer envelope into `transcript.jsonl` (ledger gains mentions/threads for free —
+  `TranscriptEntry` grows optional fields, replay stays compatible).
+
+**Done when:** `curl /api/threads` shows the market thread with participants and per-message
+mentions for a live session AND for a ledger replay.
+
+### Phase 7 — marketplace visualizer: render what the feed already knows
+
+*The flagship UI. One new tab per invisible layer, all fixture-testable.*
+
+**Build** (`examples/marketplace/web/`)
+- **Verification badge** on `RoundCard` — `round.verification` (verdict + by + reason) next to the
+  settlement badge; a failed verdict renders the "funds stay refundable" state. *(Smallest change,
+  biggest honesty win — do first.)*
+- **Coral tab (the bus view)** — threads → messages with sender colors, `@mention` chips, verb
+  badges (WANT/BID/AWARD/VERIFY/…), the session's agent roster with presence. This is the tab that
+  demos Coral: you watch the mentions fly before the market meaning is overlaid.
+- **Runs tab (the ledger)** — list from `/api/runs` (session/round/status/score-relevant fields);
+  click into a run → the facet trail: want → bids → award reasoning → escrow + deposit tx →
+  sha256-bound delivery → verifier verdict → Explorer-linked txs → raw transcript. "What did the
+  agent do for the money" as a page.
+- **Reputation panel** — `/api/reputation` scoreboard (score, won/settled/verify-fails/refunds);
+  highlight when an award reason cites track record.
+- **Replay banner** — when `/api/feed` returns `source:"ledger"`, show "replaying from the run
+  ledger — coral-server offline" instead of silently looking live.
+- **Round-flavor awareness** — freelancer: harness label on each bid (`seller-scribe` = node-llm,
+  `seller-claude` = claude-code); research: an events strip fed by `/api/events`
+  ("BRA v ARG moved 6.8pp → WANT queued → round 3").
+- **Tests**: record a verifier-gated fixture (the persist tests already build one synthetically);
+  Playwright specs for the badge, the Runs tab, the replay banner, and the Coral tab rendering
+  mentions.
+
+**Done when:** a cold `npm run marketplace:web` against a finished session (coral down, ledger
+only) shows: the replay banner, settled + verifier-refused rounds with verdicts, the run detail
+trail with working Explorer links, the reputation scoreboard, and the bus view with mentions.
+
+### Phase 8 — agent-economy dashboard: show the puppet trick
+
+*This example owns the Coral surfaces marketplace doesn't — put them on screen.*
+
+**Build** (`examples/agent-economy/web/` + `bridge/`)
+- **Checkout tab: the puppet reveal** — when the human clicks buy, render the injected message
+  labelled "you → puppet API, posted *as* user-proxy", then the seller's `@mention` reply — the
+  exact mechanic that makes the human a session participant (bridge already has both sides; it
+  just doesn't narrate them).
+- **Session header** (all tabs) — session id, namespace, agents online.
+- **Swarm tab: the fan-out view** — the broker's **one-private-thread-per-seller** pattern
+  (Coral capability §5.5) drawn as parallel lanes: quote requests out, correlated replies in,
+  the winning leg + both escrow settlements marked.
+- **Autonomous tab: primitive timeline** — each step tagged with the MCP tool behind it
+  (`create_thread` → `send_message` → `wait_for_mention` → …) so "agents coordinating over MCP"
+  is literal, not a caption.
+
+**Done when:** a demo viewer can point at the screen and say which message the human injected,
+which threads the broker fanned out, and which MCP primitive fired at each step.
+
+### Phase 9 — txodds: give the Coral round a face, tie the board to the market
+
+**Build** (`examples/txodds/`)
+- **The coral round gets the visualizer** — it's logs-only today, yet it speaks the same wire
+  protocol: `npm run coral` prints the session id + the exact feed/web one-liner
+  (`SESSION=<id> npm start` in the feed, `npm run marketplace:web`); document in
+  `coral/README.md`. Zero new UI code — the point *is* that the same visualizer works.
+- **Event markers on the oracle board** — `web/app.js` polls the watcher (`/queue`, CORS already
+  open) and badges fixtures whose implied probability moved ("▲ 6.8pp — research WANT queued"),
+  linking the live board to the research round. Degrades silently when the watcher is down.
+- **Keep `npm run dev` Coral-free** — the design seam stays; the market panels only light up when
+  a feed/watcher is reachable.
+
+**Done when:** a fixture that moves on the live board visibly triggers the research story on the
+oracle page, and the coral round can be watched in the browser instead of `docker logs`.
+
+**Build order:** 7.0 → 7 (verification badge first) → 9 (cheap, mostly wiring) → 8 (largest UI
+surface). Constraints: no new frameworks (Vite React stays Vite React, the oracle stays no-build),
+fixtures-first testing (every new view must render from recorded state with no devnet/Docker), and
+the bus view reads the same feed the ledger writes — one source of truth.
+
+---
+
 ### Future (explicitly out of scope for now)
 
 - **Finance rails:** savings-mcp-style read-only opportunity sellers; Normandy-style
@@ -323,8 +427,11 @@ buyer's award reasoning cites reputation.
 
 ## Immediate next steps
 
-1. Phase 0: scaffold `packages/agent-runtime/src/ledger/` + persist marketplace rounds.
-2. Phase 1: extract `HarnessAdapter` + `node-llm` adapter (pure refactor, protected by the
-   existing marketplace round as the regression test).
-3. Phase 2 spike: get Claude Code joining one Coral session via injected `.mcp.json`,
-   following the tutorial repo's startup-script pattern, before building the full launcher.
+*(Phases 0–6 shipped and live-validated — see the per-phase status notes above.)*
+
+1. Phase 7.0: extend `feed/src/coralState.ts` to keep thread ids + mentions, add
+   `/api/threads` + `/api/session` + `/api/events` — the data unlock for every UI below.
+2. Phase 7 first slice: the **verification badge** on `RoundCard` (the feed already folds
+   `round.verification`; the UI just never renders it), then the Runs tab and the bus view.
+3. Phase 9 cheap wins: `npm run coral` prints the feed/visualizer one-liner; watcher event
+   markers on the oracle board.

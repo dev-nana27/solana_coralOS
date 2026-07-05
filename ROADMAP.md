@@ -25,28 +25,28 @@ settlement.*
 
 ## What we already have (don't rebuild)
 
-| Layer | Where | Status |
-|---|---|---|
-| Market protocol (WANT/BID/AWARD/ESCROW_REQUIRED/DEPOSITED) | `packages/agent-runtime/src/market/protocol.ts` | ✅ typed, parsed, tested |
-| CoralOS MCP client + session plumbing | `packages/agent-runtime/src/coral/` | ✅ |
-| Escrow + arbiter (deposit / release / refund, 3-party) | `examples/txodds/escrow/` (deployed devnet) | ✅ settlement spine |
-| Buyer / seller / broker / user-proxy agents | `coral-agents/` | ✅ launched per session by coral-server |
-| Competitive bidding round + SSE feed + visualizer | `examples/marketplace/` | ✅ |
-| Devnet guard, Solana Pay, reference-bound payments | `packages/agent-runtime/src/solana/` | ✅ |
-| The fork point | `examples/txodds/agent/service.ts` `deliverService()` | ✅ — this is what harnesses replace |
+| Layer                                                      | Where                                                     | Status                                  |
+| ---------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------- |
+| Market protocol (WANT/BID/AWARD/ESCROW_REQUIRED/DEPOSITED) | `packages/agent-runtime/src/market/protocol.ts`         | ✅ typed, parsed, tested                |
+| CoralOS MCP client + session plumbing                      | `packages/agent-runtime/src/coral/`                     | ✅                                      |
+| Escrow + arbiter (deposit / release / refund, 3-party)     | `examples/txodds/escrow/` (deployed devnet)             | ✅ settlement spine                     |
+| Buyer / seller / broker / user-proxy agents                | `coral-agents/`                                         | ✅ launched per session by coral-server |
+| Competitive bidding round + SSE feed + visualizer          | `examples/marketplace/`                                 | ✅                                      |
+| Devnet guard, Solana Pay, reference-bound payments         | `packages/agent-runtime/src/solana/`                    | ✅                                      |
+| The fork point                                             | `examples/txodds/agent/service.ts` `deliverService()` | ✅ — this is what harnesses replace    |
 
 ## Source repos and what each contributes
 
-| Repo | Pattern we take | Feeds phase |
-|---|---|---|
-| [renxinxing123/tutorial_orchestrate_agent_harnesses](https://github.com/renxinxing123/tutorial_orchestrate_agent_harnesses) | Coral-server registers external harnesses via `coral-agent.toml`; session mints per-agent MCP URLs; startup scripts inject the URL into the harness config (`.mcp.json` for Claude Code, `~/.hermes/config.yaml` for Hermes) | **2** |
-| [xpriment626/delve](https://github.com/xpriment626/delve) | Coral-backed multi-agent research CLI: specialist agents, live sources, SQLite shared state, negotiation verdicts before finalization, structured final package | **4** |
-| [xpriment626/pi-factory](https://github.com/xpriment626/pi-factory) | Long-horizon software factory: blackboard, kanban tickets, planner/architect/implementer/reviewer manifests, operator view | **3** (as one seller), later full adapter |
-| [xpriment626/coding-agent-swarms](https://github.com/xpriment626/coding-agent-swarms) | Telemetry: per-iteration reasoning, tool calls, transcripts, raw session events, trace capture UI | **0**, **3** |
-| [xpriment626/solana-coralised](https://github.com/xpriment626/solana-coralised) | Postmortem lesson: one skill ≠ one agent; separate protocol actions from coordination; policy middleware as a first-class layer | **5** |
-| [xpriment626/refinery](https://github.com/xpriment626/refinery) | Coral-coordinated memory review over bounded files, run artifacts on disk | **6** |
-| [xpriment626/savings-mcp](https://github.com/xpriment626/savings-mcp) | Boundary discipline: MCP tools produce structured recommendations; signing/custody/settlement stay outside the tool service | **5**, later finance sellers |
-| [xpriment626/normandy-v1](https://github.com/xpriment626/normandy-v1) | Reputation-collateralized credit for agents (pluggable hook programs) | **future** — needs the Run Ledger's track record first |
+| Repo                                                                                                                       | Pattern we take                                                                                                                                                                                                                   | Feeds phase                                                   |
+| -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [renxinxing123/tutorial_orchestrate_agent_harnesses](https://github.com/renxinxing123/tutorial_orchestrate_agent_harnesses) | Coral-server registers external harnesses via`coral-agent.toml`; session mints per-agent MCP URLs; startup scripts inject the URL into the harness config (`.mcp.json` for Claude Code, `~/.hermes/config.yaml` for Hermes) | **2**                                                   |
+| [xpriment626/delve](https://github.com/xpriment626/delve)                                                                   | Coral-backed multi-agent research CLI: specialist agents, live sources, SQLite shared state, negotiation verdicts before finalization, structured final package                                                                   | **4**                                                   |
+| [xpriment626/pi-factory](https://github.com/xpriment626/pi-factory)                                                         | Long-horizon software factory: blackboard, kanban tickets, planner/architect/implementer/reviewer manifests, operator view                                                                                                        | **3** (as one seller), later full adapter               |
+| [xpriment626/coding-agent-swarms](https://github.com/xpriment626/coding-agent-swarms)                                       | Telemetry: per-iteration reasoning, tool calls, transcripts, raw session events, trace capture UI                                                                                                                                 | **0**, **3**                                      |
+| [xpriment626/solana-coralised](https://github.com/xpriment626/solana-coralised)                                             | Postmortem lesson: one skill ≠ one agent; separate protocol actions from coordination; policy middleware as a first-class layer                                                                                                  | **5**                                                   |
+| [xpriment626/refinery](https://github.com/xpriment626/refinery)                                                             | Coral-coordinated memory review over bounded files, run artifacts on disk                                                                                                                                                         | **6**                                                   |
+| [xpriment626/savings-mcp](https://github.com/xpriment626/savings-mcp)                                                       | Boundary discipline: MCP tools produce structured recommendations; signing/custody/settlement stay outside the tool service                                                                                                       | **5**, later finance sellers                            |
+| [xpriment626/normandy-v1](https://github.com/xpriment626/normandy-v1)                                                       | Reputation-collateralized credit for agents (pluggable hook programs)                                                                                                                                                             | **future** — needs the Run Ledger's track record first |
 
 ---
 
@@ -69,6 +69,7 @@ must be: click the run, see everything. Everything later (telemetry, verificatio
 credit) hangs off this.
 
 **Build**
+
 - `packages/agent-runtime/src/ledger/` — append-only run store. One folder per market round:
 
   ```
@@ -83,7 +84,6 @@ credit) hangs off this.
     transcript.jsonl   # the round's Coral messages, in order
     txs.json           # every Solana signature with Explorer links
   ```
-
 - Emit from the existing paths: `coral-agents/buyer-agent` writes want/award/escrow/txs;
   `coral-agents/seller-agent` writes bids/delivery; the marketplace feed
   (`examples/marketplace/feed/`) already folds session state into rounds — teach it to
@@ -108,6 +108,7 @@ behavior change; its Dockerfile builds the new package.
 One interface so the market doesn't care whether the seller is a prompt or a factory.
 
 **Build**
+
 - New package `packages/harness-runtime/` (same `file:` dep pattern as `@pay/agent-runtime`):
 
   ```ts
@@ -143,6 +144,7 @@ fulfilled a market order in an isolated workdir with a correct hash-bound delive
 Sellers stop being TypeScript loops; any harness that can hold an MCP config can join.
 
 **Build**
+
 - `coral-agents/harness-seller/` — a thin Coral-registered agent whose job is: receive the
   session's minted MCP URL, **inject it into the target harness's config**, launch the
   harness, relay market messages both ways, and stream harness events into the ledger.
@@ -162,7 +164,8 @@ Code running in a sandbox dir, and the run folder shows its transcript + deliver
 
 ### Phase 3 — Flagship demo: Paid Agent Freelancer Factory — ✅ shipped (core)
 
-*Status:* shipped as `examples/freelancer/` + `coral-agents/verifier-agent/`. The protocol gained
+*Status:* shipped as `examples/marketplace/freelancer.ts` + `coral-agents/verifier-agent/`
+(originally `examples/freelancer/`, later folded into the marketplace as a round). The protocol gained
 `VERIFY`/`VERIFIED` (in `market/protocol.ts`, tested); the verifier agent runs deterministic
 checks first (content-hash match, JSON structure, no error payload) with an optional LLM
 acceptance judge; the buyer gates release on the verdict when `VERIFIER_AGENT` is set (no verdict
@@ -183,7 +186,8 @@ adapter (stretch), award scoring beyond best-value LLM + cheapest fallback.
 The judge-facing story. A buyer posts real work; heterogeneous harnesses compete.
 
 **Build**
-- `examples/freelancer/` (sibling of `examples/marketplace/`, reuses its feed + web):
+
+- the freelancer round (now `examples/marketplace/freelancer.ts`, reusing the marketplace feed + web):
   - Buyer posts a WANT like *"build a landing page"* / *"code-review this diff"* /
     *"data dashboard for this CSV."*
   - Sellers bidding: `node-llm` (cheap, fast, shallow), `claude-code` (mid), `hermes`
@@ -205,7 +209,9 @@ arbiter release, and the dashboard replays all of it.
 
 ### Phase 4 — TxLINE Research Market (Delve pattern) — ✅ shipped (core)
 
-*Status:* shipped as `examples/research/` + an event mode in the buyer. `detectEvents` (pure,
+*Status:* shipped as the watcher in `examples/txodds/research/` + the launcher
+`examples/marketplace/research.ts` + an event mode in the buyer (originally `examples/research/`,
+later split between txodds and the marketplace). `detectEvents` (pure,
 tested) diffs the oracle proxy's `/api/board` snapshots — new verified fixtures and implied-
 probability moves ≥ threshold; the watcher queues them; the buyer polls `WANT_FEED_URL` and posts
 a WANT per event (**quiet board → no WANT → no spend**). Specialist personas `seller-moves` /
@@ -217,6 +223,7 @@ TxLINE-verified read), live Docker round validation.
 Upgrades the World Cup oracle from "LLM reads odds" to specialist research with evidence.
 
 **Build**
+
 - A TxLINE odds/match event triggers a WANT (hook into `examples/txodds/server/proxy.ts`'s
   board polling).
 - Specialist sellers (personas under `coral-agents/`, same pattern as `seller-worldcup`):
@@ -245,6 +252,7 @@ The solana-coralised lesson: policy as a first-class layer, not scattered checks
 savings-mcp lesson: tools recommend; only the settlement layer moves funds.
 
 **Build**
+
 - `packages/agent-runtime/src/policy/` — a single `enforce(action, ctx)` choke point that
   every escrow request / release / refund passes through:
   - max spend per round + per session (buyer side),
@@ -274,6 +282,7 @@ won/lost (the ledger currently holds outcomes, not reasoning).
 Sellers stop being stateless; the ledger becomes a track record.
 
 **Build**
+
 - Per-seller memory dir (what sold, what was accepted/refunded, buyer complaints, which
   reasoning worked), written from run outcomes.
 - A Refinery-style periodic review pass (Coral-coordinated) that compacts and audits those

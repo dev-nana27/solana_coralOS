@@ -32,5 +32,5 @@ bash build-agents.sh claude     # + the Claude Code seller image (seller-agent-c
 
 The round launchers instantiate personas from these images with different options — see
 [`examples/marketplace/start.ts`](../examples/marketplace/start.ts),
-[`examples/freelancer/start.ts`](../examples/freelancer/start.ts), and
-[`examples/research/start.ts`](../examples/research/start.ts).
+[`examples/marketplace/freelancer.ts`](../examples/marketplace/freelancer.ts), and
+[`examples/marketplace/research.ts`](../examples/marketplace/research.ts).

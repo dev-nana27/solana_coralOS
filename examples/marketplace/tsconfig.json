@@ -8,5 +8,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["start.ts"]
+  "include": ["start.ts", "freelancer.ts", "research.ts"]
 }

@@ -14,9 +14,9 @@
  *   FREELANCE_BRIEFS  csv of hyphenated briefs rotated per round (no spaces — the WANT arg is one token)
  *   CLAUDE_SELLER=1   add seller-claude (build its image first: Dockerfile.claude; needs ANTHROPIC_API_KEY)
  *
- * Run from the host after `docker compose up coral`:  npm install && npm start
- * Watch it: the marketplace feed + web visualizer work unchanged (same wire protocol) —
- *   cd ../marketplace/feed && SESSION=<id> MARKET_SELLERS=seller-scribe,seller-claude npm start
+ * Run from the host after `docker compose up coral`:  npm install && npm run freelancer
+ * Watch it: the same feed + web visualizer as the classic round (same wire protocol) —
+ *   cd feed && SESSION=<id> MARKET_SELLERS=seller-scribe,seller-claude npm start
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -27,7 +27,7 @@ const TOKEN = process.env.CORAL_TOKEN ?? 'dev'
 const NS = 'default'
 const AUTH = { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' }
 
-// ── Load repo-root .env (2 levels up: freelancer → examples → root) ──
+// ── Load repo-root .env (2 levels up: marketplace → examples → root) ──
 function loadEnv(): Record<string, string> {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
   const env: Record<string, string> = { ...(process.env as Record<string, string>) }

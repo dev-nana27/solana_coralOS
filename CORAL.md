@@ -37,8 +37,8 @@ the kit does**. If you want the LLM equivalent of this doc, see [LLM.md](LLM.md)
 │  coral.toml          registry scan of /agents/*, auth, docker host           │
 │  examples/txodds/coral/round.ts     POST /api/v1/local/session  (agent graph)│
 │  examples/marketplace/start.ts      "  (buyer + persona sellers)             │
-│  examples/freelancer/start.ts       "  (harness sellers + the verifier gate) │
-│  examples/research/start.ts         "  (event-mode buyer + specialists)      │
+│  examples/marketplace/freelancer.ts "  (harness sellers + the verifier gate) │
+│  examples/marketplace/research.ts   "  (event-mode buyer + specialists)      │
 │  examples/agent-economy/bridge      "  + the puppet API (human → agent)      │
 └──────────────────────────────────────────────────────────────────────────────┘
                                    │ spawns, injects CORAL_CONNECTION_URL
@@ -391,8 +391,8 @@ the doc page that shows you how.
 | [examples/txodds/coral/coral.toml](examples/txodds/coral/coral.toml)                                  | coral-server config: registry scan, auth, docker host (no wallet)            |
 | [examples/txodds/coral/round.ts](examples/txodds/coral/round.ts)                                      | Launches the TxODDS round via `POST /api/v1/local/session`                  |
 | [examples/marketplace/start.ts](examples/marketplace/start.ts)                                        | Launches the competitive market (buyer + persona sellers)                    |
-| [examples/freelancer/start.ts](examples/freelancer/start.ts)                                          | Launches the freelancer market (harness sellers + the verifier release gate) |
-| [examples/research/start.ts](examples/research/start.ts)                                              | Launches the research market (event-mode buyer; the watcher queues WANTs)    |
+| [examples/marketplace/freelancer.ts](examples/marketplace/freelancer.ts)                              | Launches the freelancer round (harness sellers + the verifier release gate)  |
+| [examples/marketplace/research.ts](examples/marketplace/research.ts)                                  | Launches the research round (event-mode buyer; [txodds/research/watcher.ts](examples/txodds/research/watcher.ts) queues the WANTs) |
 | [coral-agents/verifier-agent/](coral-agents/verifier-agent/README.md)                                 | Independent delivery verifier — `VERIFY` in, `VERIFIED pass\|fail` out      |
 | [packages/harness-runtime/](packages/harness-runtime/README.md)                                       | Harness adapter SDK — Claude Code / any CLI as a market seller              |
 | [examples/agent-economy/bridge/server.ts](examples/agent-economy/bridge/server.ts)                    | Human → agent bridge: the puppet API + extended-state reads                 |

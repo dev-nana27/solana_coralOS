@@ -34,10 +34,10 @@ Some things agents can sell on these exact rails:
 | **Oracle agent**     | a verified fact / a checked output                        | trust in a number        |
 | **Reseller agent**   | packages other agents' services into one                  | a bundle, one payment    |
 
-The first two already ship as working markets: [`examples/freelancer`](examples/freelancer/README.md)
-(heterogeneous harnesses — a plain LLM vs headless **Claude Code** — bid on a brief, an independent
-verifier gates the release) and [`examples/research`](examples/research/README.md) (live odds moves
-trigger the WANT — quiet board, no spend). Fork those instead of starting blank.
+The first two already ship as working marketplace rounds: `npm run freelancer` (heterogeneous
+harnesses — a plain LLM vs headless **Claude Code** — bid on a brief, an independent verifier gates
+the release) and `npm run research` (live odds moves trigger the WANT — quiet board, no spend).
+See [`examples/marketplace`](examples/marketplace/README.md); fork those instead of starting blank.
 
 > **The World Cup oracle is only the default demo — not the product.** It sells a verified, de-margined
 > betting line to prove the rails work end-to-end. The invitation isn't "here's a repo about sports
@@ -230,10 +230,8 @@ deployed ids with no local build. **Devnet only** — never put a funded mainnet
 
 | Directory                   | Purpose                                                                                                                                                                                                                                                               |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `examples/txodds/`        | **the default demo** — the World Cup oracle. `agent/` (`service.ts` = the `deliverService()` fork point; `edge.ts` = its transform; escrow/arbiter clients), `server/` (proxy + mint), `web/` (React board), `escrow/` (the two Anchor programs) |
-| `examples/marketplace/`   | **the full market** — a buyer + competing sellers in one CoralOS session; `feed/` (rounds + the **run ledger** `runs/`, `/api/runs`, `/api/reputation`, disk replay), `web/` (React visualizer). Needs Docker                                              |
-| `examples/freelancer/`    | **the freelancer market** — heterogeneous harnesses (plain LLM vs **Claude Code**) bid on a brief; the **verifier** gates the arbiter release. Needs Docker                                                                                              |
-| `examples/research/`      | **the research market** — live odds moves trigger paid research WANTs (event watcher + event-mode buyer; quiet board = no spend). Needs Docker + the txodds proxy                                                                                          |
+| `examples/txodds/`        | **the default demo** — the World Cup oracle. `agent/` (`service.ts` = the `deliverService()` fork point; `edge.ts` = its transform; escrow/arbiter clients), `server/` (proxy + mint), `web/` (React board), `research/` (the odds-move **event watcher** feeding the research round), `escrow/` (the two Anchor programs) |
+| `examples/marketplace/`   | **the full market** — a buyer + competing sellers in one CoralOS session, in three rounds: `start.ts` (classic), `freelancer.ts` (harness sellers + **verifier-gated** release), `research.ts` (event-driven — odds moves trigger the WANTs); `feed/` (rounds + the **run ledger** `runs/`, `/api/runs`, `/api/reputation`, disk replay), `web/` (React visualizer). Needs Docker |
 | `examples/agent-economy/` | **three front doors** on CoralOS — autonomous (agent→agent), a human checkout bridge, and a bare 402 pay-per-call quickstart                                                                                                                                  |
 | `coral-agents/`           | the agents coral-server launches per session —`buyer-agent`, `seller-agent` (+ personas incl. `seller-claude`), `verifier-agent` (the release gate), `broker` (swarm reseller), `echo-agent`, `user_proxy`                                                 |
 | `packages/agent-runtime/` | the runtime —`llm/`, `solana/`, `coral/`, `market/`, `ledger/`, `policy/`                                                                                                                                                                                    |

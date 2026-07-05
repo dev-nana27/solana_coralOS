@@ -79,8 +79,49 @@ award reasoning, escrow + deposit tx, sha256-bound delivery, verifier verdict, E
 raw transcript), serves `/api/runs` + `/api/reputation`, and **replays a session from disk when
 coral-server is down**. Details: [`feed/`](feed/README.md).
 
-Sibling markets on the same rails: [`../freelancer`](../freelancer/README.md) (harness sellers +
-verifier-gated release) and [`../research`](../research/README.md) (odds events trigger the WANTs).
+## Two more rounds on the same rails
+
+Same wire protocol, same feed, same visualizer, same ledger — different launchers.
+
+### `npm run freelancer` — heterogeneous harnesses, verifier-gated release
+
+A buyer posts a **freelance brief**; different *kinds* of agents bid — `seller-scribe` (one LLM
+call, cheap and shallow) vs optionally `seller-claude` (headless **Claude Code** working in an
+isolated per-order workdir). An independent **verifier** re-checks the hash-bound delivery and only
+a `VERIFIED pass` releases the arbiter escrow — a broken delivery is *refused* and the funds stay
+refundable. **Validated live on devnet, both paths** ([`freelancer.ts`](freelancer.ts)).
+
+```sh
+docker build -f ../../coral-agents/verifier-agent/Dockerfile -t verifier-agent:0.1.0 ../..
+npm run freelancer                      # buyer + seller-scribe + verifier-agent
+# optional Claude Code seller (real coding harness as an economic actor):
+#   bash ../../build-agents.sh claude && CLAUDE_SELLER=1 npm run freelancer   (needs ANTHROPIC_API_KEY)
+```
+
+Briefs are hyphenated tokens (the WANT `arg` is one token on the wire):
+`FREELANCE_BRIEFS=landing-page-hero-copy,pricing-table-microcopy` in `.env`. A seller with no
+capability delivers an honest `{"error": …}` payload → the verifier fails it → no release — the
+no-pay path is a feature.
+
+### `npm run research` — events trigger the market
+
+An **event-driven buyer** (`WANT_FEED_URL`): the watcher in
+[`../txodds/research/`](../txodds/research/watcher.ts) diffs the oracle proxy's live board and
+queues a job only when a fixture's implied probability actually moves (`MOVE_PCT`, default 5pp) or
+verified odds go live. Specialist personas (`seller-moves`, `seller-stats`, `seller-worldcup`)
+compete on the read; the verifier gates release. **No event → no WANT → no spend**
+([`research.ts`](research.ts)).
+
+```sh
+cd ../txodds && npm run proxy           # 1. the live board (:8801)
+cd ../txodds && npm run watch           # 2. the event watcher (:4600)
+npm run research                        # 3. the market session (from examples/marketplace)
+curl http://localhost:4600/queue        # what the watcher has seen
+```
+
+A deep-research tier (e.g. [xpriment626/delve](https://github.com/xpriment626/delve)) joins as a
+persona with `HARNESS=cli HARNESS_CMD='delve {prompt}'` — see
+[`packages/harness-runtime`](../../packages/harness-runtime/README.md).
 
 ## Demo flourishes
 

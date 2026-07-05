@@ -3,7 +3,7 @@
 #   docker build -f coral-agents/seller-agent/Dockerfile.claude -t seller-agent-claude:0.1.0 .
 #
 # The container needs ANTHROPIC_API_KEY at runtime for headless `claude -p`
-# (pass it as a session option; see examples/freelancer/start.ts).
+# (pass it as a session option; see examples/marketplace/freelancer.ts).
 
 FROM seller-agent:0.1.0
 RUN npm install -g @anthropic-ai/claude-code

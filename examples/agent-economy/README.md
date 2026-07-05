@@ -146,4 +146,13 @@ web/src/           → the React UI — add a service, a tab, a widget (see docs
 | [`../txodds/escrow/`](../txodds/escrow/README.md) | the Anchor escrow contract (settlement spine) — deployed to devnet |
 | `../../docker-compose.yml` | coral-server + bridge (run from repo root) |
 
+## Where the economy goes next
+
+These front doors sell one service pay-per-call. The **competitive** version of the same economy —
+sellers bidding, an independent **verifier gating the escrow release**, heterogeneous harnesses
+(plain LLM vs headless **Claude Code**) as economic actors, event-triggered demand, and a **run
+ledger** feeding seller reputation — lives in [`../marketplace`](../marketplace/README.md)
+(`npm start` / `npm run freelancer` / `npm run research`). Same protocol, same escrow, same
+CoralOS bus; the front doors here plug into those rounds unchanged.
+
 Devnet only. Never put a funded mainnet keypair in `.env`.

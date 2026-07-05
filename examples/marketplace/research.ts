@@ -10,9 +10,9 @@
  *   → VERIFY → VERIFIED pass → ARBITER_RELEASED
  *
  * Run order (three terminals or backgrounds):
- *   1. cd examples/txodds  && npm run proxy      # the live board on :8801
- *   2. cd examples/research && npm run watch     # the event watcher on :4600
- *   3. docker compose up -d coral && cd examples/research && npm start
+ *   1. cd examples/txodds && npm run proxy       # the live board on :8801
+ *   2. cd examples/txodds && npm run watch       # the event watcher on :4600 (research/watcher.ts)
+ *   3. docker compose up -d coral && cd examples/marketplace && npm run research
  *
  * A deep-research tier (e.g. xpriment626/delve) joins as a persona with
  * HARNESS=cli HARNESS_CMD='delve {prompt}' — see packages/harness-runtime.

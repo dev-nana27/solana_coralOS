@@ -83,6 +83,19 @@ npm run coral                     # one buyer + one seller; watch a full WANT ->
 
 Needs Docker + `TXLINE_API_KEY` (`npm run mint`). Verified: a real `RELEASED` tx on devnet.
 
+## The research watcher (events → paid WANTs)
+
+[`research/`](research/watcher.ts) turns this live board into a **market trigger**: it polls
+`/api/board`, diffs snapshots ([`detect.ts`](research/detect.ts), unit-tested), and queues a job
+when a fixture's implied probability moves ≥ `MOVE_PCT` (default 5pp) or verified odds go live.
+The event-driven buyer in [`../marketplace/research.ts`](../marketplace/research.ts) polls
+`GET /next` and posts one WANT per event — **quiet board, no spend**.
+
+```sh
+npm run proxy      # the live board (:8801)
+npm run watch      # the watcher (:4600) — GET /next | /queue | /api/health
+```
+
 ## Verified on devnet (2026-06)
 
 | Check | Value |

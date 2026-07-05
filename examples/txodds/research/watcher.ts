@@ -1,18 +1,18 @@
 /**
  * Research-market watcher - turns live odds movement into paid WANTs.
  *
- * Polls the oracle proxy's /api/board (examples/txodds - run `npm run proxy` there first), diffs
- * snapshots with detectEvents, and queues one WANT per event. The buyer (in WANT_FEED_URL event
- * mode) pops the queue one job per cycle:
+ * Polls the oracle proxy's /api/board (run `npm run proxy` first), diffs snapshots with
+ * detectEvents, and queues one WANT per event. The buyer (in WANT_FEED_URL event mode, see
+ * examples/marketplace/research.ts) pops the queue one job per cycle:
  *
- *   GET /next   -> 200 { service, arg, budgetSol?, note }  |  204 when quiet
- *   GET /queue  -> { queue, updatedAt }                    (debug/dashboard)
- *   GET /api/health
+ *   GET /next        -> 200 { service, arg, budgetSol?, note }  |  204 when quiet
+ *   GET /queue       -> { queue, updatedAt }                    (debug/dashboard)
+ *   GET /api/health  -> { ok, queued }
  *
  * Env: PROXY_BASE (default http://localhost:8801), POLL_MS (default 15000), MOVE_PCT (default 5),
  *      RESEARCH_BUDGET_SOL (optional per-event budget, capped by the buyer), PORT (default 4600).
  */
-import express from 'express'
+import http from 'node:http'
 import { detectEvents, type BoardFixture, type BoardSnapshot, type MarketEvent } from './detect.js'
 
 const PROXY = process.env.PROXY_BASE ?? 'http://localhost:8801'
@@ -43,24 +43,29 @@ async function poll(): Promise<void> {
   }
 }
 
-const app = express()
-app.use((_req, res, next) => { res.setHeader('Access-Control-Allow-Origin', '*'); next() })
+const json = (res: http.ServerResponse, status: number, body?: unknown): void => {
+  res.writeHead(status, { 'content-type': 'application/json', 'access-control-allow-origin': '*' })
+  res.end(body === undefined ? undefined : JSON.stringify(body))
+}
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, queued: queue.length }))
-
-app.get('/queue', (_req, res) => res.json({ queue, updatedAt: new Date().toISOString() }))
-
-app.get('/next', (_req, res) => {
-  const event = queue.shift()
-  if (!event) return res.status(204).end()
-  res.json({
-    service: 'txline',
-    arg: event.arg,
-    ...(BUDGET ? { budgetSol: BUDGET } : {}),
-    note: event.note,
+http
+  .createServer((req, res) => {
+    const path = new URL(req.url ?? '/', `http://localhost:${PORT}`).pathname
+    if (path === '/api/health') return json(res, 200, { ok: true, queued: queue.length })
+    if (path === '/queue') return json(res, 200, { queue, updatedAt: new Date().toISOString() })
+    if (path === '/next') {
+      const event = queue.shift()
+      if (!event) return json(res, 204)
+      return json(res, 200, {
+        service: 'txline',
+        arg: event.arg,
+        ...(BUDGET ? { budgetSol: BUDGET } : {}),
+        note: event.note,
+      })
+    }
+    json(res, 404, { error: 'not found', routes: ['/next', '/queue', '/api/health'] })
   })
-})
+  .listen(PORT, () => console.error(`[watcher] http://localhost:${PORT}/next  (board=${PROXY}, every ${POLL_MS}ms, move>=${MOVE_PCT}pp)`))
 
 setInterval(poll, POLL_MS)
 void poll()
-app.listen(PORT, () => console.error(`[watcher] http://localhost:${PORT}/next  (board=${PROXY}, every ${POLL_MS}ms, move>=${MOVE_PCT}pp)`))

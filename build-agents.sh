@@ -47,7 +47,7 @@ case "${1:-all}" in
     echo "Agent images built. Run a CoralOS round:"
     echo "  docker compose up -d coral"
     echo "  cd examples/txodds && npm run coral        # World Cup oracle round"
-    echo "  cd examples/freelancer && npm start        # verifier-gated freelancer market"
+    echo "  cd examples/marketplace && npm run freelancer   # verifier-gated freelancer market"
     echo "Optional Claude Code seller: bash build-agents.sh claude"
     ;;
   *) echo "Usage: bash build-agents.sh [seller|buyer|verifier|claude|all]"; exit 1 ;;
